@@ -12,6 +12,7 @@
   --bg:#fff7f1;
   --card:#ffffff;
   --text:#333;
+  --danger:#ff5c5c;
 }
 
 *{ box-sizing:border-box; }
@@ -86,6 +87,7 @@ button.secondary{
   text-align: center;
 }
 
+/* ===== ประวัติ ===== */
 .history {
   display: flex;
   flex-direction: column;
@@ -96,9 +98,30 @@ button.secondary{
   background: var(--bg);
   padding: 12px 14px;
   border-radius: 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
   font-size: 14px;
+}
+
+.history-left {
+  line-height: 1.4;
+}
+
+.history-right {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-btn {
+  background: var(--danger);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
 }
 </style>
 </head>
@@ -155,23 +178,31 @@ function getHistory(){
   return JSON.parse(localStorage.getItem("fuelHistory") || "[]");
 }
 
-function saveLocal(data){
-  const list = getHistory();
-  list.unshift(data);
+function saveHistory(list){
   localStorage.setItem("fuelHistory", JSON.stringify(list));
 }
 
 function loadHistory(){
   const list = getHistory();
-  document.getElementById("history").innerHTML =
-    list.length === 0
-    ? "<div class='result'>ยังไม่มีข้อมูล</div>"
-    : list.map(i=>`
-      <div class="history-item">
-        <span>${i.type} • ${i.distance} กม.</span>
-        <strong>${i.totalCost.toFixed(2)} ฿</strong>
+  const el = document.getElementById("history");
+
+  if(list.length === 0){
+    el.innerHTML = "<div class='result'>ยังไม่มีข้อมูล</div>";
+    return;
+  }
+
+  el.innerHTML = list.map(i=>`
+    <div class="history-item">
+      <div class="history-left">
+        <strong>${i.type}</strong><br>
+        ${i.distance} กม.
       </div>
-    `).join("");
+      <div class="history-right">
+        <strong>${i.totalCost.toFixed(2)} ฿</strong>
+        <button class="delete-btn" onclick="deleteItem(${i.id})">ลบ</button>
+      </div>
+    </div>
+  `).join("");
 }
 
 function calculate(){
@@ -186,9 +217,23 @@ function calculate(){
   document.getElementById("output").innerHTML =
     `<div class="result">💰 ${total.toFixed(2)} บาท</div>`;
 
-  saveLocal({distance:d,type,totalCost:total});
+  const list = getHistory();
+  list.unshift({
+    id: Date.now(),
+    distance: d,
+    type: type,
+    totalCost: total
+  });
+
+  saveHistory(list);
   loadHistory();
   distance.value="";
+}
+
+function deleteItem(id){
+  const list = getHistory().filter(i => i.id !== id);
+  saveHistory(list);
+  loadHistory();
 }
 
 function summary(){
